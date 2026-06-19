@@ -1,0 +1,75 @@
+syntax = "proto3"; 
+ 
+package valorantplayer; 
+ 
+option go_package = 
+"pusha/matchmaking-service/pkg/proto;proto"; 
+ 
+service ValorantPlayerService { 
+  rpc GetValorantProfile(GetValorantProfileRequest) 
+      returns (GetValorantProfileResponse); 
+ 
+  rpc FindValorantPlayers(FindValorantPlayersRequest) 
+      returns (FindValorantPlayersResponse); 
+ 
+  rpc CheckValorantPlayerEligibility(CheckValorantPlayerEligibilityRequest) 
+      returns (CheckValorantPlayerEligibilityResponse); 
+} 
+ 
+message GetValorantProfileRequest { 
+  string player_id = 1; 
+} 
+ 
+message GetValorantProfileResponse { 
+  bool exists = 1; 
+  string player_id = 2; 
+  string nickname = 3; 
+  string riot_id = 4; 
+  string region = 5; 
+  string current_rank = 6; 
+  repeated string main_roles = 7; 
+  string status = 8; 
+  double teammate_rating = 9; 
+  int32 reviews_count = 10; 
+} 
+ 
+message FindValorantPlayersRequest { 
+  string excluded_player_id = 1; 
+  string min_rank = 2; 
+  string max_rank = 3; 
+  string required_player_status = 4; 
+  double min_teammate_rating = 5; 
+  string region = 6; 
+  repeated string required_roles = 7; 
+  int32 limit = 8; 
+} 
+ 
+message ValorantPlayerCandidate { 
+  string player_id = 1; 
+  string nickname = 2; 
+  string riot_id = 3; 
+  string region = 4; 
+  string current_rank = 5; 
+  repeated string main_roles = 6; 
+  string status = 7; 
+  double teammate_rating = 8; 
+  int32 reviews_count = 9; 
+} 
+ 
+message FindValorantPlayersResponse { 
+  repeated ValorantPlayerCandidate candidates = 1; 
+} 
+ 
+message CheckValorantPlayerEligibilityRequest { 
+  string player_id = 1; 
+  string min_rank = 2; 
+  string max_rank = 3; 
+  string required_player_status = 4; 
+  double min_teammate_rating = 5; 
+string region = 6; 
+repeated string required_roles = 7; 
+} 
+message CheckValorantPlayerEligibilityResponse { 
+bool eligible = 1; 
+repeated string reasons = 2; 
+}
