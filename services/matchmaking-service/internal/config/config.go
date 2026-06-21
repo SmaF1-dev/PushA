@@ -10,6 +10,7 @@ import (
 type Config struct {
 	HTTPPort              string `json:"http_port"`
 	PlayerServiceGRPCAddr string `json:"player_service_grppc_addr"`
+	DatabaseURL           string `json:"database_url"`
 }
 
 func Load() Config {
@@ -21,6 +22,7 @@ func Load() Config {
 	return Config{
 		HTTPPort:              getEnv("HTTP_PORT", "8080"),
 		PlayerServiceGRPCAddr: getEnv("PLAYER_SERVICE_GRPC_ADDR", "localhost:50051"),
+		DatabaseURL:           getEnv("DATABASE_URL", "postgres://postgres:admin@localhost:5432/pusha_matchmaking_db?sslmode=disable"),
 	}
 }
 

@@ -3,14 +3,18 @@ package api
 import (
 	"net/http"
 	"pusha/matchmaking-service/internal/api/handlers"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func NewRouter() http.Handler {
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
 
-	mux.HandleFunc("/health", handlers.HealthHandler)
+	router.Get("/health", handlers.HealthHandler)
 
-	mux.HandleFunc("/api/v1/matchmaking/requests", handlers.CreateMatchmakingRequestHandler)
+	router.Route("/api/v1", func(r chi.Router) {
+		r.Post("/matchmaking/requests", handlers.CreateMatchmakingRequestHandler)
+	})
 
-	return mux
+	return router
 }
