@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
+	"pusha/matchmaking-service/internal/api/response"
 )
 
 type HealthResponse struct {
@@ -12,24 +12,12 @@ type HealthResponse struct {
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		response.WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only GET method is allowed", nil)
 		return
 	}
 
-	response := HealthResponse{
+	response.WriteJSON(w, http.StatusOK, HealthResponse{
 		Status:  "ok",
 		Service: "matchmaking-service",
-	}
-
-	writeJSON(w, http.StatusOK, response)
-}
-
-func writeJSON(w http.ResponseWriter, statusCode int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
-	}
+	})
 }

@@ -10,5 +10,7 @@ func NewRouter() http.Handler {
 
 	mux.HandleFunc("/health", handlers.HealthHandler)
 
+	mux.HandleFunc("/api/v1/matchmaking/requests", handlers.CreateMatchmakingRequestHandler)
+
 	return mux
 }
