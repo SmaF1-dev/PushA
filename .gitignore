@@ -5,9 +5,13 @@ __pycache__/
 .venv/
 venv/
 ENV/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 .env
 *.log
-
 *.db
 *.sqlite3
 
@@ -22,3 +26,4 @@ Icon
 
 # Docker
 .docker/
+.idea/
