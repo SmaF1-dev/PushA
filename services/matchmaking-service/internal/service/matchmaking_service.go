@@ -20,6 +20,15 @@ var (
 	ErrRegionRequired               = errors.New("region is required")
 	ErrInvalidNeededPlayers         = errors.New("needed_players must be between 1 and 4")
 	ErrStrategyRequired             = errors.New("strategy is required")
+
+	ErrInvalidMinRank              = errors.New("min_rank is invalid")
+	ErrInvalidMaxRank              = errors.New("max_rank is invalid")
+	ErrInvalidRankRange            = errors.New("min_rank must be less than or equal to max_rank")
+	ErrInvalidRequiredPlayerStatus = errors.New("required_player_status is invalid")
+	ErrInvalidRequiredRole         = errors.New("required_roles contains invalid role")
+	ErrInvalidStrategy             = errors.New("strategy is invalid")
+
+	ErrActiveRequestAlreadyExists = errors.New("active matchmaking request already exists")
 )
 
 type MatchmakingService struct {
@@ -35,6 +44,15 @@ func NewMatchmakingService(matchmakingRepository *repository.MatchmakingReposito
 func (s *MatchmakingService) CreateRequest(ctx context.Context, request dto.CreateMatchmakingRequest) (domain.MatchmakingRequest, error) {
 	if err := validateCreateMatchmakingRequest(request); err != nil {
 		return domain.MatchmakingRequest{}, err
+	}
+
+	hasActiveRequest, err := s.matchmakingRepository.HasActiveRequest(ctx, request.AuthorID)
+	if err != nil {
+		return domain.MatchmakingRequest{}, err
+	}
+
+	if hasActiveRequest {
+		return domain.MatchmakingRequest{}, ErrActiveRequestAlreadyExists
 	}
 
 	now := time.Now().UTC()
@@ -56,7 +74,7 @@ func (s *MatchmakingService) CreateRequest(ctx context.Context, request dto.Crea
 		ExpiresAt:            expiresAt,
 	}
 
-	err := s.matchmakingRepository.Create(ctx, matchmakingRequest)
+	err = s.matchmakingRepository.Create(ctx, matchmakingRequest)
 	if err != nil {
 		return domain.MatchmakingRequest{}, err
 	}
@@ -81,12 +99,28 @@ func validateCreateMatchmakingRequest(request dto.CreateMatchmakingRequest) erro
 		return ErrMinRankRequired
 	}
 
+	if !domain.IsValidValorantRank(request.MinRank) {
+		return ErrInvalidMinRank
+	}
+
 	if request.MaxRank == "" {
 		return ErrMaxRankRequired
 	}
 
+	if !domain.IsValidValorantRank(request.MaxRank) {
+		return ErrInvalidMaxRank
+	}
+
+	if !domain.IsRankRangeValid(request.MinRank, request.MaxRank) {
+		return ErrInvalidRankRange
+	}
+
 	if request.RequiredPlayerStatus == "" {
 		return ErrRequiredPlayerStatusRequired
+	}
+
+	if !domain.IsValidPlayerStatus(request.RequiredPlayerStatus) {
+		return ErrInvalidRequiredPlayerStatus
 	}
 
 	if request.MinTeammateRating < 0 || request.MinTeammateRating > 5 {
@@ -97,12 +131,22 @@ func validateCreateMatchmakingRequest(request dto.CreateMatchmakingRequest) erro
 		return ErrRegionRequired
 	}
 
+	for _, role := range request.RequiredRoles {
+		if !domain.IsValidValorantRole(role) {
+			return ErrInvalidRequiredRole
+		}
+	}
+
 	if request.NeededPlayers < 1 || request.NeededPlayers > 4 {
 		return ErrInvalidNeededPlayers
 	}
 
 	if request.Strategy == "" {
 		return ErrStrategyRequired
+	}
+
+	if !domain.IsValidMatchingStrategy(request.Strategy) {
+		return ErrInvalidStrategy
 	}
 
 	return nil

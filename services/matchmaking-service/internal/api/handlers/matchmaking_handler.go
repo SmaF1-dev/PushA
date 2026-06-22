@@ -94,18 +94,32 @@ func writeCreateRequestError(w http.ResponseWriter, err error) {
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "author_id"})
 	case errors.Is(err, service.ErrMinRankRequired):
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_rank"})
+	case errors.Is(err, service.ErrInvalidMinRank):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_rank"})
 	case errors.Is(err, service.ErrMaxRankRequired):
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "max_rank"})
+	case errors.Is(err, service.ErrInvalidMaxRank):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "max_rank"})
+	case errors.Is(err, service.ErrInvalidRankRange):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "rank_range"})
 	case errors.Is(err, service.ErrRequiredPlayerStatusRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "required_player_status"})
+	case errors.Is(err, service.ErrInvalidRequiredPlayerStatus):
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "required_player_status"})
 	case errors.Is(err, service.ErrInvalidMinTeammateRating):
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_teammate_rating"})
 	case errors.Is(err, service.ErrRegionRequired):
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "region"})
+	case errors.Is(err, service.ErrInvalidRequiredRole):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "required_roles"})
 	case errors.Is(err, service.ErrInvalidNeededPlayers):
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "needed_players"})
 	case errors.Is(err, service.ErrStrategyRequired):
 		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "strategy"})
+	case errors.Is(err, service.ErrInvalidStrategy):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "strategy"})
+	case errors.Is(err, service.ErrActiveRequestAlreadyExists):
+		response.WriteError(w, http.StatusConflict, "ACTIVE_REQUEST_ALREADY_EXISTS", err.Error(), nil)
 	default:
 		response.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create matchmaking request", map[string]any{
 			"reason": err.Error(),

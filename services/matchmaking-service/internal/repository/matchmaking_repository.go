@@ -165,3 +165,23 @@ func (r *MatchmakingRepository) GetByAuthorID(ctx context.Context, authorID stri
 
 	return requests, nil
 }
+
+func (r *MatchmakingRepository) HasActiveRequest(ctx context.Context, authorID string) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM matchmaking_requests
+			WHERE author_id = $1
+			  AND status IN ('OPEN', 'SEARCHING')
+		)
+	`
+
+	var exists bool
+
+	err := r.db.QueryRow(ctx, query, authorID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
