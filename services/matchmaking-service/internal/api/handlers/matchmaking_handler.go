@@ -9,6 +9,7 @@ import (
 	"pusha/matchmaking-service/internal/repository"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -101,7 +102,7 @@ func (h *MatchmakingHandler) CreateMatchmakingRequestHandler(w http.ResponseWrit
 		RequiredRoles:        request.RequiredRoles,
 		NeededPlayers:        request.NeededPlayers,
 		Strategy:             request.Strategy,
-		Status:               "OPEN",
+		Status:               domain.MatchmakingRequestStatusOpen,
 		CreatedAt:            now,
 		ExpiresAt:            expiresAt,
 	}
@@ -114,21 +115,42 @@ func (h *MatchmakingHandler) CreateMatchmakingRequestHandler(w http.ResponseWrit
 		return
 	}
 
-	result := dto.MatchmakingRequestResponse{
-		ID:                   matchmakingRequest.ID,
-		AuthorID:             matchmakingRequest.AuthorID,
-		MinRank:              matchmakingRequest.MinRank,
-		MaxRank:              matchmakingRequest.MaxRank,
-		RequiredPlayerStatus: matchmakingRequest.RequiredPlayerStatus,
-		MinTeammateRating:    matchmakingRequest.MinTeammateRating,
-		Region:               matchmakingRequest.Region,
-		RequiredRoles:        matchmakingRequest.RequiredRoles,
-		NeededPlayers:        matchmakingRequest.NeededPlayers,
-		Strategy:             matchmakingRequest.Strategy,
-		Status:               matchmakingRequest.Status,
-		CreatedAt:            matchmakingRequest.CreatedAt.Format(time.RFC3339),
-		ExpiresAt:            matchmakingRequest.ExpiresAt.Format(time.RFC3339),
+	response.WriteJSON(w, http.StatusCreated, toMatchmakingRequestResponse(matchmakingRequest))
+}
+
+func (h *MatchmakingHandler) GetMatchmakingRequestHandler(w http.ResponseWriter, r *http.Request) {
+	requestID := chi.URLParam(r, "request_id")
+	if requestID == "" {
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "request_id is required", map[string]any{
+			"field": "request_id",
+		})
+		return
 	}
 
-	response.WriteJSON(w, http.StatusCreated, result)
+	matchmakingRequest, err := h.matchmakingRepository.GetByID(r.Context(), requestID)
+	if err != nil {
+		response.WriteError(w, http.StatusNotFound, "MATCHMAKING_REQUEST_NOT_FOUND", "Matchmaking request not found", map[string]any{
+			"request_id": requestID,
+		})
+		return
+	}
+	response.WriteJSON(w, http.StatusOK, toMatchmakingRequestResponse(matchmakingRequest))
+}
+
+func toMatchmakingRequestResponse(request domain.MatchmakingRequest) dto.MatchmakingRequestResponse {
+	return dto.MatchmakingRequestResponse{
+		ID:                   request.ID,
+		AuthorID:             request.AuthorID,
+		MinRank:              request.MinRank,
+		MaxRank:              request.MaxRank,
+		RequiredPlayerStatus: request.RequiredPlayerStatus,
+		MinTeammateRating:    request.MinTeammateRating,
+		Region:               request.Region,
+		RequiredRoles:        request.RequiredRoles,
+		NeededPlayers:        request.NeededPlayers,
+		Strategy:             request.Strategy,
+		Status:               request.Status,
+		CreatedAt:            request.CreatedAt.Format(time.RFC3339),
+		ExpiresAt:            request.ExpiresAt.Format(time.RFC3339),
+	}
 }

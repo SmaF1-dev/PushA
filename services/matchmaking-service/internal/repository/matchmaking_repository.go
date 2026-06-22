@@ -17,6 +17,50 @@ func NewMatchmakingRepository(db *pgxpool.Pool) *MatchmakingRepository {
 	}
 }
 
+func (r *MatchmakingRepository) GetByID(ctx context.Context, id string) (domain.MatchmakingRequest, error) {
+	query := `
+		SELECT
+			id,
+			author_id,
+			min_rank,
+			max_rank,
+			required_player_status,
+			min_teammate_rating,
+			region,
+			required_roles,
+			needed_players,
+			strategy,
+			status,
+			created_at,
+			expires_at
+		FROM matchmaking_requests
+		WHERE id = $1
+	`
+
+	var request domain.MatchmakingRequest
+
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&request.ID,
+		&request.AuthorID,
+		&request.MinRank,
+		&request.MaxRank,
+		&request.RequiredPlayerStatus,
+		&request.MinTeammateRating,
+		&request.Region,
+		&request.RequiredRoles,
+		&request.NeededPlayers,
+		&request.Strategy,
+		&request.Status,
+		&request.CreatedAt,
+		&request.ExpiresAt,
+	)
+	if err != nil {
+		return domain.MatchmakingRequest{}, err
+	}
+
+	return request, nil
+}
+
 func (r *MatchmakingRepository) Create(ctx context.Context, request domain.MatchmakingRequest) error {
 	query := `
 		INSERT INTO matchmaking_requests (
