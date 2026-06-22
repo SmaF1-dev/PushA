@@ -4,16 +4,25 @@ import (
 	"encoding/json"
 	"net/http"
 	"pusha/matchmaking-service/internal/api/response"
+	"pusha/matchmaking-service/internal/domain"
 	"pusha/matchmaking-service/internal/dto"
+	"pusha/matchmaking-service/internal/repository"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-func CreateMatchmakingRequestHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		response.WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only POST method is allowed", nil)
-		return
-	}
+type MatchmakingHandler struct {
+	matchmakingRepository *repository.MatchmakingRepository
+}
 
+func NewMatchmakingHandler(matchmakingRepository *repository.MatchmakingRepository) *MatchmakingHandler {
+	return &MatchmakingHandler{
+		matchmakingRepository: matchmakingRepository,
+	}
+}
+
+func (h *MatchmakingHandler) CreateMatchmakingRequestHandler(w http.ResponseWriter, r *http.Request) {
 	var request dto.CreateMatchmakingRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -81,8 +90,8 @@ func CreateMatchmakingRequestHandler(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	expiresAt := now.Add(time.Hour)
 
-	result := dto.MatchmakingRequestResponse{
-		ID:                   "request_mock_1",
+	matchmakingRequest := domain.MatchmakingRequest{
+		ID:                   uuid.NewString(),
 		AuthorID:             request.AuthorID,
 		MinRank:              request.MinRank,
 		MaxRank:              request.MaxRank,
@@ -93,8 +102,32 @@ func CreateMatchmakingRequestHandler(w http.ResponseWriter, r *http.Request) {
 		NeededPlayers:        request.NeededPlayers,
 		Strategy:             request.Strategy,
 		Status:               "OPEN",
-		CreatedAt:            now.Format(time.RFC3339),
-		ExpiresAt:            expiresAt.Format(time.RFC3339),
+		CreatedAt:            now,
+		ExpiresAt:            expiresAt,
+	}
+
+	err = h.matchmakingRepository.Create(r.Context(), matchmakingRequest)
+	if err != nil {
+		response.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Failed to create matchmaking request", map[string]any{
+			"reason": err.Error(),
+		})
+		return
+	}
+
+	result := dto.MatchmakingRequestResponse{
+		ID:                   matchmakingRequest.ID,
+		AuthorID:             matchmakingRequest.AuthorID,
+		MinRank:              matchmakingRequest.MinRank,
+		MaxRank:              matchmakingRequest.MaxRank,
+		RequiredPlayerStatus: matchmakingRequest.RequiredPlayerStatus,
+		MinTeammateRating:    matchmakingRequest.MinTeammateRating,
+		Region:               matchmakingRequest.Region,
+		RequiredRoles:        matchmakingRequest.RequiredRoles,
+		NeededPlayers:        matchmakingRequest.NeededPlayers,
+		Strategy:             matchmakingRequest.Strategy,
+		Status:               matchmakingRequest.Status,
+		CreatedAt:            matchmakingRequest.CreatedAt.Format(time.RFC3339),
+		ExpiresAt:            matchmakingRequest.ExpiresAt.Format(time.RFC3339),
 	}
 
 	response.WriteJSON(w, http.StatusCreated, result)
