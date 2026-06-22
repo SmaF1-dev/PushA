@@ -137,6 +137,34 @@ func (h *MatchmakingHandler) GetMatchmakingRequestHandler(w http.ResponseWriter,
 	response.WriteJSON(w, http.StatusOK, toMatchmakingRequestResponse(matchmakingRequest))
 }
 
+func (h *MatchmakingHandler) GetPlayerMatchmakingRequestsHandler(w http.ResponseWriter, r *http.Request) {
+	playerID := chi.URLParam(r, "player_id")
+	if playerID == "" {
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "player_id is required", map[string]any{
+			"field": "player_id",
+		})
+		return
+	}
+
+	requests, err := h.matchmakingRepository.GetByAuthorID(r.Context(), playerID)
+	if err != nil {
+		response.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Failed to get player matchmaking requests", map[string]any{
+			"reason": err.Error(),
+		})
+		return
+	}
+
+	requestResponses := make([]dto.MatchmakingRequestResponse, 0, len(requests))
+	for _, request := range requests {
+		requestResponses = append(requestResponses, toMatchmakingRequestResponse(request))
+	}
+
+	response.WriteJSON(w, http.StatusOK, dto.PlayerMatchmakingRequestsResponse{
+		PlayerID: playerID,
+		Requests: requestResponses,
+	})
+}
+
 func toMatchmakingRequestResponse(request domain.MatchmakingRequest) dto.MatchmakingRequestResponse {
 	return dto.MatchmakingRequestResponse{
 		ID:                   request.ID,

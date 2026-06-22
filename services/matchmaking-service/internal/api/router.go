@@ -15,6 +15,7 @@ func NewRouter(matchmakingHandler *handlers.MatchmakingHandler) http.Handler {
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Post("/matchmaking/requests", matchmakingHandler.CreateMatchmakingRequestHandler)
 		r.Get("/matchmaking/requests/{request_id}", matchmakingHandler.GetMatchmakingRequestHandler)
+		r.Get("/players/{player_id}/matchmaking/requests", matchmakingHandler.GetPlayerMatchmakingRequestsHandler)
 	})
 
 	return router

@@ -104,3 +104,64 @@ func (r *MatchmakingRepository) Create(ctx context.Context, request domain.Match
 
 	return err
 }
+
+func (r *MatchmakingRepository) GetByAuthorID(ctx context.Context, authorID string) ([]domain.MatchmakingRequest, error) {
+	query := `
+		SELECT
+			id,
+			author_id,
+			min_rank,
+			max_rank,
+			required_player_status,
+			min_teammate_rating,
+			region,
+			required_roles,
+			needed_players,
+			strategy,
+			status,
+			created_at,
+			expires_at
+		FROM matchmaking_requests
+		WHERE author_id = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, authorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var requests []domain.MatchmakingRequest
+
+	for rows.Next() {
+		var request domain.MatchmakingRequest
+
+		err := rows.Scan(
+			&request.ID,
+			&request.AuthorID,
+			&request.MinRank,
+			&request.MaxRank,
+			&request.RequiredPlayerStatus,
+			&request.MinTeammateRating,
+			&request.Region,
+			&request.RequiredRoles,
+			&request.NeededPlayers,
+			&request.Strategy,
+			&request.Status,
+			&request.CreatedAt,
+			&request.ExpiresAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		requests = append(requests, request)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return requests, nil
+}
