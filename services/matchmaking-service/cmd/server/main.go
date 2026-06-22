@@ -8,6 +8,7 @@ import (
 	"pusha/matchmaking-service/internal/config"
 	"pusha/matchmaking-service/internal/db"
 	"pusha/matchmaking-service/internal/repository"
+	"pusha/matchmaking-service/internal/service"
 )
 
 func main() {
@@ -20,7 +21,8 @@ func main() {
 	defer postgresPool.Close()
 
 	matchmakingRepository := repository.NewMatchmakingRepository(postgresPool)
-	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingRepository)
+	matchmakingService := service.NewMatchmakingService(matchmakingRepository)
+	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 
 	router := api.NewRouter(matchmakingHandler)
 

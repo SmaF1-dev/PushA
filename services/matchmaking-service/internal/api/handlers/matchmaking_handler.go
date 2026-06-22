@@ -2,24 +2,24 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"pusha/matchmaking-service/internal/api/response"
 	"pusha/matchmaking-service/internal/domain"
 	"pusha/matchmaking-service/internal/dto"
-	"pusha/matchmaking-service/internal/repository"
+	"pusha/matchmaking-service/internal/service"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 type MatchmakingHandler struct {
-	matchmakingRepository *repository.MatchmakingRepository
+	matchmakingService *service.MatchmakingService
 }
 
-func NewMatchmakingHandler(matchmakingRepository *repository.MatchmakingRepository) *MatchmakingHandler {
+func NewMatchmakingHandler(matchmakingService *service.MatchmakingService) *MatchmakingHandler {
 	return &MatchmakingHandler{
-		matchmakingRepository: matchmakingRepository,
+		matchmakingService: matchmakingService,
 	}
 }
 
@@ -32,86 +32,9 @@ func (h *MatchmakingHandler) CreateMatchmakingRequestHandler(w http.ResponseWrit
 		return
 	}
 
-	if request.AuthorID == "" {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "author_id is required", map[string]any{
-			"field": "author_id",
-		})
-		return
-	}
-
-	if request.MinRank == "" {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "min_rank is required", map[string]any{
-			"field": "min_rank",
-		})
-		return
-	}
-
-	if request.MaxRank == "" {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "max_rank is required", map[string]any{
-			"field": "max_rank",
-		})
-		return
-	}
-
-	if request.RequiredPlayerStatus == "" {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "required_player_status is required", map[string]any{
-			"field": "required_player_status",
-		})
-		return
-	}
-
-	if request.MinTeammateRating < 0 || request.MinTeammateRating > 5 {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "min_teammate_rating must be between 0 and 5", map[string]any{
-			"field": "min_teammate_rating",
-		})
-		return
-	}
-
-	if request.Region == "" {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "region is required", map[string]any{
-			"field": "region",
-		})
-		return
-	}
-
-	if request.NeededPlayers < 1 || request.NeededPlayers > 4 {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "needed_players must be between 1 and 4", map[string]any{
-			"field": "needed_players",
-		})
-		return
-	}
-
-	if request.Strategy == "" {
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "strategy is required", map[string]any{
-			"field": "strategy",
-		})
-		return
-	}
-
-	now := time.Now().UTC()
-	expiresAt := now.Add(time.Hour)
-
-	matchmakingRequest := domain.MatchmakingRequest{
-		ID:                   uuid.NewString(),
-		AuthorID:             request.AuthorID,
-		MinRank:              request.MinRank,
-		MaxRank:              request.MaxRank,
-		RequiredPlayerStatus: request.RequiredPlayerStatus,
-		MinTeammateRating:    request.MinTeammateRating,
-		Region:               request.Region,
-		RequiredRoles:        request.RequiredRoles,
-		NeededPlayers:        request.NeededPlayers,
-		Strategy:             request.Strategy,
-		Status:               domain.MatchmakingRequestStatusOpen,
-		CreatedAt:            now,
-		ExpiresAt:            expiresAt,
-	}
-
-	err = h.matchmakingRepository.Create(r.Context(), matchmakingRequest)
+	matchmakingRequest, err := h.matchmakingService.CreateRequest(r.Context(), request)
 	if err != nil {
-		response.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Failed to create matchmaking request", map[string]any{
-			"reason": err.Error(),
-		})
+		writeCreateRequestError(w, err)
 		return
 	}
 
@@ -127,7 +50,7 @@ func (h *MatchmakingHandler) GetMatchmakingRequestHandler(w http.ResponseWriter,
 		return
 	}
 
-	matchmakingRequest, err := h.matchmakingRepository.GetByID(r.Context(), requestID)
+	matchmakingRequest, err := h.matchmakingService.GetRequestByID(r.Context(), requestID)
 	if err != nil {
 		response.WriteError(w, http.StatusNotFound, "MATCHMAKING_REQUEST_NOT_FOUND", "Matchmaking request not found", map[string]any{
 			"request_id": requestID,
@@ -146,7 +69,7 @@ func (h *MatchmakingHandler) GetPlayerMatchmakingRequestsHandler(w http.Response
 		return
 	}
 
-	requests, err := h.matchmakingRepository.GetByAuthorID(r.Context(), playerID)
+	requests, err := h.matchmakingService.GetRequestsByAuthorID(r.Context(), playerID)
 	if err != nil {
 		response.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Failed to get player matchmaking requests", map[string]any{
 			"reason": err.Error(),
@@ -163,6 +86,31 @@ func (h *MatchmakingHandler) GetPlayerMatchmakingRequestsHandler(w http.Response
 		PlayerID: playerID,
 		Requests: requestResponses,
 	})
+}
+
+func writeCreateRequestError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, service.ErrAuthorIDRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "author_id"})
+	case errors.Is(err, service.ErrMinRankRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_rank"})
+	case errors.Is(err, service.ErrMaxRankRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "max_rank"})
+	case errors.Is(err, service.ErrRequiredPlayerStatusRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "required_player_status"})
+	case errors.Is(err, service.ErrInvalidMinTeammateRating):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_teammate_rating"})
+	case errors.Is(err, service.ErrRegionRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "region"})
+	case errors.Is(err, service.ErrInvalidNeededPlayers):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "needed_players"})
+	case errors.Is(err, service.ErrStrategyRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "strategy"})
+	default:
+		response.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create matchmaking request", map[string]any{
+			"reason": err.Error(),
+		})
+	}
 }
 
 func toMatchmakingRequestResponse(request domain.MatchmakingRequest) dto.MatchmakingRequestResponse {
