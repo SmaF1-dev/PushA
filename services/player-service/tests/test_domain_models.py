@@ -1,7 +1,7 @@
 import unittest
 from uuid import uuid4
 
-from ..app.domain import (
+from app.domain import (
     InvalidPlayerError,
     InvalidProfileError,
     InvalidReviewError,

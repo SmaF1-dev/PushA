@@ -51,8 +51,8 @@ class ValorantRank(StrEnum):
     def is_between_or_equal(self, minimum: "ValorantRank", maximum: "ValorantRank") -> bool:
         """
         Check whether this rank belongs to given rank range
-        :param minimum: lowest possible rank
-        :param maximum: highest possible rank
+        :param minimum: the lowest possible rank
+        :param maximum: the highest possible rank
         :return: True if rank belongs to given range False otherwise
         """
         if minimum.order > maximum.order:
