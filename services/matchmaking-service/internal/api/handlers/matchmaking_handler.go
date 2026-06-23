@@ -88,6 +88,39 @@ func (h *MatchmakingHandler) GetPlayerMatchmakingRequestsHandler(w http.Response
 	})
 }
 
+func (h *MatchmakingHandler) SearchCandidatesHandler(w http.ResponseWriter, r *http.Request) {
+	requestID := chi.URLParam(r, "request_id")
+	if requestID == "" {
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "request_id is required", map[string]any{
+			"field": "request_id",
+		})
+		return
+	}
+
+	candidates, err := h.matchmakingService.SearchCandidates(r.Context(), requestID)
+	if err != nil {
+		if errors.Is(err, service.ErrRequestIsNotOpen) {
+			response.WriteError(w, http.StatusConflict, "REQUEST_IS_NOT_OPEN", err.Error(), nil)
+			return
+		}
+
+		response.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to search candidates", map[string]any{
+			"reason": err.Error(),
+		})
+		return
+	}
+
+	candidateResponses := make([]dto.CandidateResponse, 0, len(candidates))
+	for _, candidate := range candidates {
+		candidateResponses = append(candidateResponses, toCandidateResponse(candidate))
+	}
+
+	response.WriteJSON(w, http.StatusOK, dto.SearchCandidatesResponse{
+		RequestID:  requestID,
+		Candidates: candidateResponses,
+	})
+}
+
 func writeCreateRequestError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrAuthorIDRequired):
@@ -142,5 +175,19 @@ func toMatchmakingRequestResponse(request domain.MatchmakingRequest) dto.Matchma
 		Status:               request.Status,
 		CreatedAt:            request.CreatedAt.Format(time.RFC3339),
 		ExpiresAt:            request.ExpiresAt.Format(time.RFC3339),
+	}
+}
+
+func toCandidateResponse(candidate domain.Candidate) dto.CandidateResponse {
+	return dto.CandidateResponse{
+		PlayerID:       candidate.PlayerID,
+		Nickname:       candidate.Nickname,
+		RiotID:         candidate.RiotID,
+		CurrentRank:    candidate.CurrentRank,
+		Region:         candidate.Region,
+		MainRoles:      candidate.MainRoles,
+		Status:         candidate.Status,
+		TeammateRating: candidate.TeammateRating,
+		Score:          candidate.Score,
 	}
 }

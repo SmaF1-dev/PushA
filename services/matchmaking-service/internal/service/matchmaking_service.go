@@ -29,15 +29,21 @@ var (
 	ErrInvalidStrategy             = errors.New("strategy is invalid")
 
 	ErrActiveRequestAlreadyExists = errors.New("active matchmaking request already exists")
+	ErrRequestIsNotOpen           = errors.New("matchmaking request is not open")
 )
 
 type MatchmakingService struct {
 	matchmakingRepository *repository.MatchmakingRepository
+	candidateRepository   *repository.CandidateRepository
 }
 
-func NewMatchmakingService(matchmakingRepository *repository.MatchmakingRepository) *MatchmakingService {
+func NewMatchmakingService(
+	matchmakingRepository *repository.MatchmakingRepository,
+	candidateRepository *repository.CandidateRepository,
+) *MatchmakingService {
 	return &MatchmakingService{
 		matchmakingRepository: matchmakingRepository,
+		candidateRepository:   candidateRepository,
 	}
 }
 
@@ -88,6 +94,76 @@ func (s *MatchmakingService) GetRequestByID(ctx context.Context, requestID strin
 
 func (s *MatchmakingService) GetRequestsByAuthorID(ctx context.Context, authorID string) ([]domain.MatchmakingRequest, error) {
 	return s.matchmakingRepository.GetByAuthorID(ctx, authorID)
+}
+
+func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID string) ([]domain.Candidate, error) {
+	matchmakingRequest, err := s.matchmakingRepository.GetByID(ctx, requestID)
+	if err != nil {
+		return nil, err
+	}
+
+	if matchmakingRequest.Status != domain.MatchmakingRequestStatusOpen {
+		return nil, ErrRequestIsNotOpen
+	}
+
+	now := time.Now().UTC()
+
+	candidates := []domain.Candidate{
+		{
+			ID:             uuid.NewString(),
+			RequestID:      requestID,
+			PlayerID:       "player_2",
+			Nickname:       "SmokeMaster",
+			RiotID:         "SmokeMaster#EUW",
+			CurrentRank:    "GOLD_2",
+			Region:         matchmakingRequest.Region,
+			MainRoles:      []string{"CONTROLLER"},
+			Status:         "READY_TO_PLAY",
+			TeammateRating: 4.5,
+			Score:          87.5,
+			CreatedAt:      now,
+		},
+		{
+			ID:             uuid.NewString(),
+			RequestID:      requestID,
+			PlayerID:       "player_3",
+			Nickname:       "SentinelGuy",
+			RiotID:         "SentinelGuy#EUW",
+			CurrentRank:    "PLATINUM_1",
+			Region:         matchmakingRequest.Region,
+			MainRoles:      []string{"SENTINEL"},
+			Status:         "READY_TO_PLAY",
+			TeammateRating: 4.2,
+			Score:          82.0,
+			CreatedAt:      now,
+		},
+		{
+			ID:             uuid.NewString(),
+			RequestID:      requestID,
+			PlayerID:       "player_4",
+			Nickname:       "FlashBoy",
+			RiotID:         "FlashBoy#EUW",
+			CurrentRank:    "GOLD_3",
+			Region:         matchmakingRequest.Region,
+			MainRoles:      []string{"INITIATOR"},
+			Status:         "READY_TO_PLAY",
+			TeammateRating: 3.9,
+			Score:          76.5,
+			CreatedAt:      now,
+		},
+	}
+
+	err = s.candidateRepository.SaveMany(ctx, candidates)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.matchmakingRepository.UpdateStatus(ctx, requestID, domain.MatchmakingRequestStatusSearching)
+	if err != nil {
+		return nil, err
+	}
+
+	return candidates, nil
 }
 
 func validateCreateMatchmakingRequest(request dto.CreateMatchmakingRequest) error {

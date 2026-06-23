@@ -21,7 +21,8 @@ func main() {
 	defer postgresPool.Close()
 
 	matchmakingRepository := repository.NewMatchmakingRepository(postgresPool)
-	matchmakingService := service.NewMatchmakingService(matchmakingRepository)
+	candidateRepository := repository.NewCandidateRepository(postgresPool)
+	matchmakingService := service.NewMatchmakingService(matchmakingRepository, candidateRepository)
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 
 	router := api.NewRouter(matchmakingHandler)

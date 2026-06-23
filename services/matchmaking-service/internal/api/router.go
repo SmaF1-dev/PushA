@@ -16,6 +16,7 @@ func NewRouter(matchmakingHandler *handlers.MatchmakingHandler) http.Handler {
 		r.Post("/matchmaking/requests", matchmakingHandler.CreateMatchmakingRequestHandler)
 		r.Get("/matchmaking/requests/{request_id}", matchmakingHandler.GetMatchmakingRequestHandler)
 		r.Get("/players/{player_id}/matchmaking/requests", matchmakingHandler.GetPlayerMatchmakingRequestsHandler)
+		r.Post("/matchmaking/requests/{request_id}/search", matchmakingHandler.SearchCandidatesHandler)
 	})
 
 	return router
