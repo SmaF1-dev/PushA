@@ -121,6 +121,34 @@ func (h *MatchmakingHandler) SearchCandidatesHandler(w http.ResponseWriter, r *h
 	})
 }
 
+func (h *MatchmakingHandler) GetCandidatesHandler(w http.ResponseWriter, r *http.Request) {
+	requestID := chi.URLParam(r, "request_id")
+	if requestID == "" {
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "request_id is required", map[string]any{
+			"field": "request_id",
+		})
+		return
+	}
+
+	candidates, err := h.matchmakingService.GetCandidatesByRequestID(r.Context(), requestID)
+	if err != nil {
+		response.WriteError(w, http.StatusNotFound, "MATCHMAKING_REQUEST_NOT_FOUND", "Matchmaking request not found", map[string]any{
+			"request_id": requestID,
+		})
+		return
+	}
+
+	candidateResponses := make([]dto.CandidateResponse, 0, len(candidates))
+	for _, candidate := range candidates {
+		candidateResponses = append(candidateResponses, toCandidateResponse(candidate))
+	}
+
+	response.WriteJSON(w, http.StatusOK, dto.SearchCandidatesResponse{
+		RequestID:  requestID,
+		Candidates: candidateResponses,
+	})
+}
+
 func writeCreateRequestError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrAuthorIDRequired):

@@ -166,6 +166,15 @@ func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID str
 	return candidates, nil
 }
 
+func (s *MatchmakingService) GetCandidatesByRequestID(ctx context.Context, requestID string) ([]domain.Candidate, error) {
+	_, err := s.matchmakingRepository.GetByID(ctx, requestID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.candidateRepository.GetByRequestID(ctx, requestID)
+}
+
 func validateCreateMatchmakingRequest(request dto.CreateMatchmakingRequest) error {
 	if request.AuthorID == "" {
 		return ErrAuthorIDRequired
