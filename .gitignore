@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+*.log
+
+# Databases (если будете хранить данные локально)
+*.db
+*.sqlite3
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# IDE - Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# Go (часть Никиты)
+/services/matchmaking-service/matchmaking-service
+/services/matchmaking-service/bin/
+go.work
+
+# Docker
+.docker/
