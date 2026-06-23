@@ -120,7 +120,6 @@ func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID str
 			MainRoles:      []string{"CONTROLLER"},
 			Status:         "READY_TO_PLAY",
 			TeammateRating: 4.5,
-			Score:          87.5,
 			CreatedAt:      now,
 		},
 		{
@@ -134,7 +133,6 @@ func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID str
 			MainRoles:      []string{"SENTINEL"},
 			Status:         "READY_TO_PLAY",
 			TeammateRating: 4.2,
-			Score:          82.0,
 			CreatedAt:      now,
 		},
 		{
@@ -148,10 +146,25 @@ func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID str
 			MainRoles:      []string{"INITIATOR"},
 			Status:         "READY_TO_PLAY",
 			TeammateRating: 3.9,
-			Score:          76.5,
+			CreatedAt:      now,
+		},
+		{
+			ID:             uuid.NewString(),
+			RequestID:      requestID,
+			PlayerID:       "player_5",
+			Nickname:       "DuelOnly",
+			RiotID:         "DuelOnly#EUW",
+			CurrentRank:    "SILVER_2",
+			Region:         matchmakingRequest.Region,
+			MainRoles:      []string{"DUELIST"},
+			Status:         "ONLINE",
+			TeammateRating: 4.8,
 			CreatedAt:      now,
 		},
 	}
+
+	candidateFilter := NewCandidateFilter()
+	candidates = candidateFilter.Filter(matchmakingRequest, candidates)
 
 	scoringStrategy := NewScoringStrategy(matchmakingRequest.Strategy)
 
