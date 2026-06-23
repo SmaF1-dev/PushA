@@ -1,38 +1,37 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
+	"pusha/matchmaking-service/internal/api"
+	"pusha/matchmaking-service/internal/api/handlers"
+	"pusha/matchmaking-service/internal/config"
+	"pusha/matchmaking-service/internal/db"
+	"pusha/matchmaking-service/internal/repository"
+	"pusha/matchmaking-service/internal/service"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
+	cfg := config.Load()
 
-	addr := ":8080"
+	postgresPool, err := db.NewPostgresPool(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatal("failed to connect to PostgreSQL: ", err)
+	}
+	defer postgresPool.Close()
+
+	matchmakingRepository := repository.NewMatchmakingRepository(postgresPool)
+	matchmakingService := service.NewMatchmakingService(matchmakingRepository)
+	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
+
+	router := api.NewRouter(matchmakingHandler)
+
+	addr := ":" + cfg.HTTPPort
 
 	log.Println("Matchmaking service started on", addr)
 
-	err := http.ListenAndServe(addr, mux)
+	err = http.ListenAndServe(addr, router)
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"status":  "ok",
-		"service": "matchmaking-service",
-	}
-
-	json.NewEncoder(w).Encode(response)
 }
