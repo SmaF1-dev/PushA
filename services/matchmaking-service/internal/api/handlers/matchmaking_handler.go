@@ -149,6 +149,59 @@ func (h *MatchmakingHandler) GetCandidatesHandler(w http.ResponseWriter, r *http
 	})
 }
 
+func (h *MatchmakingHandler) CreateMatchGroupHandler(w http.ResponseWriter, r *http.Request) {
+	requestID := chi.URLParam(r, "request_id")
+	if requestID == "" {
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "request_id is required", map[string]any{
+			"field": "request_id",
+		})
+		return
+	}
+
+	var request dto.CreateMatchGroupRequest
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		response.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Request body contains invalid JSON", nil)
+		return
+	}
+
+	group, err := h.matchmakingService.CreateGroup(r.Context(), requestID, request.SelectedCandidateIDs)
+	if err != nil {
+		writeCreateGroupError(w, err)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusCreated, toMatchGroupResponse(group))
+}
+
+func writeCreateGroupError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, service.ErrSelectedCandidatesRequired):
+		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "selected_candidate_ids"})
+	case errors.Is(err, service.ErrTooManySelectedCandidates):
+		response.WriteError(w, http.StatusBadRequest, "TOO_MANY_SELECTED_CANDIDATES", err.Error(), nil)
+	case errors.Is(err, service.ErrSelectedCandidateNotFound):
+		response.WriteError(w, http.StatusBadRequest, "SELECTED_CANDIDATE_NOT_FOUND", err.Error(), nil)
+	case errors.Is(err, service.ErrRequestIsNotSearching):
+		response.WriteError(w, http.StatusConflict, "REQUEST_IS_NOT_SEARCHING", err.Error(), nil)
+	default:
+		response.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create match group", map[string]any{
+			"reason": err.Error(),
+		})
+	}
+}
+
+func toMatchGroupResponse(group domain.MatchGroup) dto.MatchGroupResponse {
+	return dto.MatchGroupResponse{
+		ID:        group.ID,
+		RequestID: group.RequestID,
+		Members:   group.Members,
+		Status:    group.Status,
+		CreatedAt: group.CreatedAt.Format(time.RFC3339),
+	}
+}
+
 func writeCreateRequestError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrAuthorIDRequired):

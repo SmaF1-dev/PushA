@@ -22,7 +22,8 @@ func main() {
 
 	matchmakingRepository := repository.NewMatchmakingRepository(postgresPool)
 	candidateRepository := repository.NewCandidateRepository(postgresPool)
-	matchmakingService := service.NewMatchmakingService(matchmakingRepository, candidateRepository)
+	groupRepository := repository.NewGroupRepository(postgresPool)
+	matchmakingService := service.NewMatchmakingService(matchmakingRepository, candidateRepository, groupRepository)
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 
 	router := api.NewRouter(matchmakingHandler)

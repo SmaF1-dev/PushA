@@ -30,20 +30,27 @@ var (
 
 	ErrActiveRequestAlreadyExists = errors.New("active matchmaking request already exists")
 	ErrRequestIsNotOpen           = errors.New("matchmaking request is not open")
+	ErrRequestIsNotSearching      = errors.New("matchmaking request is not searching")
+	ErrSelectedCandidatesRequired = errors.New("selected_candidate_ids is required")
+	ErrTooManySelectedCandidates  = errors.New("too many selected candidates")
+	ErrSelectedCandidateNotFound  = errors.New("selected candidate not found")
 )
 
 type MatchmakingService struct {
 	matchmakingRepository *repository.MatchmakingRepository
 	candidateRepository   *repository.CandidateRepository
+	groupRepository       *repository.GroupRepository
 }
 
 func NewMatchmakingService(
 	matchmakingRepository *repository.MatchmakingRepository,
 	candidateRepository *repository.CandidateRepository,
+	groupRepository *repository.GroupRepository,
 ) *MatchmakingService {
 	return &MatchmakingService{
 		matchmakingRepository: matchmakingRepository,
 		candidateRepository:   candidateRepository,
+		groupRepository:       groupRepository,
 	}
 }
 
@@ -192,6 +199,65 @@ func (s *MatchmakingService) GetCandidatesByRequestID(ctx context.Context, reque
 	}
 
 	return s.candidateRepository.GetByRequestID(ctx, requestID)
+}
+
+func (s *MatchmakingService) CreateGroup(ctx context.Context, requestID string, selectedCandidateIDs []string) (domain.MatchGroup, error) {
+	if len(selectedCandidateIDs) == 0 {
+		return domain.MatchGroup{}, ErrSelectedCandidatesRequired
+	}
+
+	matchmakingRequest, err := s.matchmakingRepository.GetByID(ctx, requestID)
+	if err != nil {
+		return domain.MatchGroup{}, err
+	}
+
+	if matchmakingRequest.Status != domain.MatchmakingRequestStatusSearching {
+		return domain.MatchGroup{}, ErrRequestIsNotSearching
+	}
+
+	if len(selectedCandidateIDs) > matchmakingRequest.NeededPlayers {
+		return domain.MatchGroup{}, ErrTooManySelectedCandidates
+	}
+
+	candidates, err := s.candidateRepository.GetByRequestID(ctx, requestID)
+	if err != nil {
+		return domain.MatchGroup{}, err
+	}
+
+	candidateByPlayerID := make(map[string]domain.Candidate)
+	for _, candidate := range candidates {
+		candidateByPlayerID[candidate.PlayerID] = candidate
+	}
+
+	for _, selectedCandidateID := range selectedCandidateIDs {
+		if _, ok := candidateByPlayerID[selectedCandidateID]; !ok {
+			return domain.MatchGroup{}, ErrSelectedCandidateNotFound
+		}
+	}
+
+	members := make([]string, 0, len(selectedCandidateIDs)+1)
+	members = append(members, matchmakingRequest.AuthorID)
+	members = append(members, selectedCandidateIDs...)
+
+	group := domain.MatchGroup{
+		ID:        uuid.NewString(),
+		RequestID: requestID,
+		Members:   members,
+		Status:    domain.MatchGroupStatusCreated,
+		CreatedAt: time.Now().UTC(),
+	}
+
+	err = s.groupRepository.Create(ctx, group)
+	if err != nil {
+		return domain.MatchGroup{}, err
+	}
+
+	err = s.matchmakingRepository.UpdateStatus(ctx, requestID, domain.MatchmakingRequestStatusCompleted)
+	if err != nil {
+		return domain.MatchGroup{}, err
+	}
+
+	return group, nil
 }
 
 func validateCreateMatchmakingRequest(request dto.CreateMatchmakingRequest) error {
