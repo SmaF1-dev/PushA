@@ -88,3 +88,15 @@ func IsRankRangeValid(minRank string, maxRank string) bool {
 
 	return minRankOrder <= maxRankOrder
 }
+
+func IsRankInRange(rank string, minRank string, maxRank string) bool {
+	rankOrder, rankExists := valorantRankOrder[rank]
+	minRankOrder, minRankExists := valorantRankOrder[minRank]
+	maxRankOrder, maxRankExists := valorantRankOrder[maxRank]
+
+	if !rankExists || !minRankExists || !maxRankExists {
+		return false
+	}
+
+	return rankOrder >= minRankOrder && rankOrder <= maxRankOrder
+}

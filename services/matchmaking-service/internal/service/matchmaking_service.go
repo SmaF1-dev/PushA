@@ -153,6 +153,12 @@ func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID str
 		},
 	}
 
+	scoringStrategy := NewScoringStrategy(matchmakingRequest.Strategy)
+
+	for i := range candidates {
+		candidates[i].Score = scoringStrategy.CalculateScore(matchmakingRequest, candidates[i])
+	}
+
 	err = s.candidateRepository.SaveMany(ctx, candidates)
 	if err != nil {
 		return nil, err
