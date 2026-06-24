@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  player-service:
+    build: ./services/player-service
+    container_name: player-service
+    ports:
+      - "8000:8000"   
+      - "50051:50051" 
+    environment:
+      - DATABASE_URL=postgresql://user:password@db-player:5432/player_db
+    depends_on:
+      - db-player
+    networks:
+      - valorant-net
+
+  db-player:
+    image: postgres:15-alpine
+    container_name: db-player
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=player_db
+    volumes:
+      - player_data:/var/lib/postgresql/data
+    networks:
+      - valorant-net
+
+  matchmaking-service:
+    build: ./services/matchmaking-service
+    container_name: matchmaking-service
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db-matchmaking:5432/matchmaking_db
+      - PLAYER_SERVICE_ADDR=player-service:50051 # Адрес для gRPC
+    depends_on:
+      - db-matchmaking
+    networks:
+      - valorant-net
+
+  db-matchmaking:
+    image: postgres:15-alpine
+    container_name: db-matchmaking
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=matchmaking_db
+    volumes:
+      - matchmaking_data:/var/lib/postgresql/data
+    networks:
+      - valorant-net
+
+networks:
+  valorant-net:
+    driver: bridge
+
+volumes:
+  player_data:
+  matchmaking_data:
