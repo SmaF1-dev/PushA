@@ -1,6 +1,6 @@
 import logging
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -8,6 +8,7 @@ from app.api import health_router, players_router, profiles_router, reviews_rout
 from app.api.exception_handlers import register_exception_handlers
 from app.config import Settings, get_settings
 from app.db import dispose_engine
+from app.grpc import create_grpc_server
 
 
 OPENAPI_TAGS = [
@@ -30,16 +31,33 @@ def configure_logging(level: str) -> None:
     )
 
 
-@asynccontextmanager
-async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    """Manage resources shared by the FastAPI application.
+Lifespan = Callable[[FastAPI], AbstractAsyncContextManager[None]]
 
-    :param application: Running FastAPI application.
-    :yields: Control to FastAPI while the application is serving requests.
+
+def create_lifespan(settings: Settings) -> Lifespan:
+    """Create a lifecycle that owns both gRPC and database resources.
+
+    :param settings: Validated application configuration.
+    :returns: FastAPI-compatible asynchronous lifespan callable.
     """
-    del application
-    yield
-    await dispose_engine()
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        """Start gRPC beside HTTP and release shared resources on shutdown.
+
+        :param application: Running FastAPI application.
+        :yields: Control while both transports are accepting requests.
+        """
+        grpc_server = create_grpc_server(settings)
+        application.state.grpc_server = grpc_server
+        try:
+            await grpc_server.start()
+            yield
+        finally:
+            await grpc_server.stop()
+            await dispose_engine()
+
+    return lifespan
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -64,7 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url="/redoc",
         openapi_url="/openapi.json",
         openapi_tags=OPENAPI_TAGS,
-        lifespan=lifespan,
+        lifespan=create_lifespan(current_settings),
     )
     application.state.settings = current_settings
 
@@ -81,8 +99,10 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
 
+    runtime_settings = get_settings()
     uvicorn.run(
-        "main:app",
-        host="localhost",
-        port=8000,
+        "app.main:app",
+        host=runtime_settings.http_host,
+        port=runtime_settings.http_port,
+        reload=runtime_settings.debug,
     )

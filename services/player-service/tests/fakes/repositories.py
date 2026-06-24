@@ -2,8 +2,60 @@ from collections.abc import Sequence
 from copy import deepcopy
 from uuid import UUID
 
-from app.domain import Player, TeammateReview, ValorantProfile
-from app.repositories.interfaces import PlayerRepository, ProfileRepository, ReviewRepository
+from app.domain import (
+    Player,
+    PlayerProfileSnapshot,
+    PlayerSelectionCriteria,
+    TeammateReview,
+    ValorantProfile,
+)
+from app.repositories.interfaces import (
+    PlayerQueryRepository,
+    PlayerRepository,
+    ProfileRepository,
+    ReviewRepository,
+)
+
+
+class FakePlayerQueryRepository(PlayerQueryRepository):
+    """Store matchmaking player projections in memory for tests.
+
+    :param profiles: Initial joined player/profile projections.
+    """
+
+    def __init__(self, profiles: Sequence[PlayerProfileSnapshot] = ()) -> None:
+        self._profiles = {
+            profile.player_id: deepcopy(profile) for profile in profiles
+        }
+
+    async def get_profile(
+        self,
+        player_id: UUID,
+    ) -> PlayerProfileSnapshot | None:
+        """Return a copied player projection by UUID.
+
+        :param player_id: Player UUID.
+        :returns: Projection copy or ``None`` when absent.
+        """
+        profile = self._profiles.get(player_id)
+        return deepcopy(profile) if profile is not None else None
+
+    async def find_players(
+        self,
+        criteria: PlayerSelectionCriteria,
+    ) -> Sequence[PlayerProfileSnapshot]:
+        """Apply domain selection criteria to in-memory projections.
+
+        :param criteria: Validated matchmaking criteria.
+        :returns: Matching projection copies in deterministic order.
+        """
+        profiles = [
+            profile
+            for profile in self._profiles.values()
+            if criteria.matches(profile)
+        ]
+        profiles.sort(key=lambda profile: (-profile.teammate_rating, profile.player_id))
+        return deepcopy(profiles[: criteria.limit])
 
 
 class FakePlayerRepository(PlayerRepository):

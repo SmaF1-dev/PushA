@@ -15,3 +15,7 @@ class InvalidProfileError(DomainError):
 
 class InvalidReviewError(DomainError):
     """Teammate review data is invalid."""
+
+
+class InvalidPlayerQueryError(DomainError):
+    """Player search or eligibility criteria are invalid."""
