@@ -1,1 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
 .env
+*.log
+
+*.db
+*.sqlite3
+
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# Docker
+.docker/
