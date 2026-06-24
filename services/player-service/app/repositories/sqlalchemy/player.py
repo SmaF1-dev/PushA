@@ -1,10 +1,13 @@
 from uuid import UUID
 
 from sqlalchemy import exists, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import PlayerModel
+from app.db.integrity import RIOT_ID_UNIQUE_CONSTRAINT, find_constraint_name
 from app.domain import Player
+from app.repositories.exceptions import DuplicateRiotIdError
 from app.repositories.interfaces import PlayerRepository
 from app.repositories.mappers import player_to_domain, player_to_model
 
@@ -23,11 +26,17 @@ class SqlAlchemyPlayerRepository(PlayerRepository):
 
         :param player: Domain player to persist.
         :returns: Persisted player.
+        :raises DuplicateRiotIdError: If the Riot ID uniqueness constraint is violated.
         :raises sqlalchemy.exc.IntegrityError: If a database constraint is violated.
         """
         model = player_to_model(player)
         self._session.add(model)
-        await self._session.flush()
+        try:
+            await self._session.flush()
+        except IntegrityError as error:
+            if find_constraint_name(error) == RIOT_ID_UNIQUE_CONSTRAINT:
+                raise DuplicateRiotIdError(player.riot_id) from error
+            raise
         return player_to_domain(model)
 
     async def get_by_id(self, player_id: UUID) -> Player | None:

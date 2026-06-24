@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.domain import Player, ValorantProfile, ValorantRank, ValorantRole
 from app.repositories.interfaces import PlayerRepository, ProfileRepository
+from app.repositories.exceptions import DuplicateRiotIdError
 
 from .exceptions import PlayerNotFoundError, RiotIdAlreadyExistsError
 from .transactions import TransactionManager
@@ -63,6 +64,9 @@ class PlayerService:
             persisted_profile = await self._profiles.add(profile)
             await self._transaction.commit()
             return persisted_player, persisted_profile
+        except DuplicateRiotIdError as error:
+            await self._transaction.rollback()
+            raise RiotIdAlreadyExistsError(riot_id) from error
         except Exception:
             await self._transaction.rollback()
             raise
