@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"pusha/matchmaking-service/internal/api/response"
 	"pusha/matchmaking-service/internal/domain"
@@ -34,7 +33,7 @@ func (h *MatchmakingHandler) CreateMatchmakingRequestHandler(w http.ResponseWrit
 
 	matchmakingRequest, err := h.matchmakingService.CreateRequest(r.Context(), request)
 	if err != nil {
-		writeCreateRequestError(w, err)
+		response.WriteAppError(w, err)
 		return
 	}
 
@@ -99,14 +98,7 @@ func (h *MatchmakingHandler) SearchCandidatesHandler(w http.ResponseWriter, r *h
 
 	candidates, err := h.matchmakingService.SearchCandidates(r.Context(), requestID)
 	if err != nil {
-		if errors.Is(err, service.ErrRequestIsNotOpen) {
-			response.WriteError(w, http.StatusConflict, "REQUEST_IS_NOT_OPEN", err.Error(), nil)
-			return
-		}
-
-		response.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to search candidates", map[string]any{
-			"reason": err.Error(),
-		})
+		response.WriteAppError(w, err)
 		return
 	}
 
@@ -168,28 +160,11 @@ func (h *MatchmakingHandler) CreateMatchGroupHandler(w http.ResponseWriter, r *h
 
 	group, err := h.matchmakingService.CreateGroup(r.Context(), requestID, request.SelectedCandidateIDs)
 	if err != nil {
-		writeCreateGroupError(w, err)
+		response.WriteAppError(w, err)
 		return
 	}
 
 	response.WriteJSON(w, http.StatusCreated, toMatchGroupResponse(group))
-}
-
-func writeCreateGroupError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, service.ErrSelectedCandidatesRequired):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "selected_candidate_ids"})
-	case errors.Is(err, service.ErrTooManySelectedCandidates):
-		response.WriteError(w, http.StatusBadRequest, "TOO_MANY_SELECTED_CANDIDATES", err.Error(), nil)
-	case errors.Is(err, service.ErrSelectedCandidateNotFound):
-		response.WriteError(w, http.StatusBadRequest, "SELECTED_CANDIDATE_NOT_FOUND", err.Error(), nil)
-	case errors.Is(err, service.ErrRequestIsNotSearching):
-		response.WriteError(w, http.StatusConflict, "REQUEST_IS_NOT_SEARCHING", err.Error(), nil)
-	default:
-		response.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create match group", map[string]any{
-			"reason": err.Error(),
-		})
-	}
 }
 
 func toMatchGroupResponse(group domain.MatchGroup) dto.MatchGroupResponse {
@@ -199,45 +174,6 @@ func toMatchGroupResponse(group domain.MatchGroup) dto.MatchGroupResponse {
 		Members:   group.Members,
 		Status:    group.Status,
 		CreatedAt: group.CreatedAt.Format(time.RFC3339),
-	}
-}
-
-func writeCreateRequestError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, service.ErrAuthorIDRequired):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "author_id"})
-	case errors.Is(err, service.ErrMinRankRequired):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_rank"})
-	case errors.Is(err, service.ErrInvalidMinRank):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_rank"})
-	case errors.Is(err, service.ErrMaxRankRequired):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "max_rank"})
-	case errors.Is(err, service.ErrInvalidMaxRank):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "max_rank"})
-	case errors.Is(err, service.ErrInvalidRankRange):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "rank_range"})
-	case errors.Is(err, service.ErrRequiredPlayerStatusRequired):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "required_player_status"})
-	case errors.Is(err, service.ErrInvalidRequiredPlayerStatus):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "required_player_status"})
-	case errors.Is(err, service.ErrInvalidMinTeammateRating):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "min_teammate_rating"})
-	case errors.Is(err, service.ErrRegionRequired):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "region"})
-	case errors.Is(err, service.ErrInvalidRequiredRole):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "required_roles"})
-	case errors.Is(err, service.ErrInvalidNeededPlayers):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "needed_players"})
-	case errors.Is(err, service.ErrStrategyRequired):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "strategy"})
-	case errors.Is(err, service.ErrInvalidStrategy):
-		response.WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), map[string]any{"field": "strategy"})
-	case errors.Is(err, service.ErrActiveRequestAlreadyExists):
-		response.WriteError(w, http.StatusConflict, "ACTIVE_REQUEST_ALREADY_EXISTS", err.Error(), nil)
-	default:
-		response.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create matchmaking request", map[string]any{
-			"reason": err.Error(),
-		})
 	}
 }
 
