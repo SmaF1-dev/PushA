@@ -62,6 +62,12 @@ PostgreSQL
 
 ## Установка
 
+Внутри директории сервиса необходимо:
+
+```powershell
+cd your\path\to\project\PushA\services\player-service
+```
+
 Создать виртуальное окружение:
 
 ```powershell
