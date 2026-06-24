@@ -5,6 +5,11 @@ from app.domain import Player, TeammateReview, ValorantProfile
 
 
 def player_to_model(player: Player) -> PlayerModel:
+    """Map a domain player to its ORM representation.
+
+    :param player: Domain player.
+    :returns: Detached SQLAlchemy player model.
+    """
     return PlayerModel(
         id=player.id,
         nickname=player.nickname,
@@ -15,6 +20,11 @@ def player_to_model(player: Player) -> PlayerModel:
 
 
 def player_to_domain(model: PlayerModel) -> Player:
+    """Map an ORM player to its domain representation.
+
+    :param model: SQLAlchemy player model.
+    :returns: Domain player.
+    """
     return Player(
         id=model.id,
         nickname=model.nickname,
@@ -25,6 +35,11 @@ def player_to_domain(model: PlayerModel) -> Player:
 
 
 def profile_to_model(profile: ValorantProfile) -> ValorantProfileModel:
+    """Map a domain Valorant profile to its ORM representation.
+
+    :param profile: Domain Valorant profile.
+    :returns: Detached SQLAlchemy profile model.
+    """
     return ValorantProfileModel(
         id=profile.id,
         player_id=profile.player_id,
@@ -40,6 +55,12 @@ def profile_to_model(profile: ValorantProfile) -> ValorantProfileModel:
 
 
 def profile_to_domain(model: ValorantProfileModel) -> ValorantProfile:
+    """Map an ORM Valorant profile to its domain representation.
+
+    :param model: SQLAlchemy profile model.
+    :returns: Domain Valorant profile.
+    :raises InvalidProfileError: If persisted data violates domain invariants.
+    """
     return ValorantProfile(
         id=model.id,
         player_id=model.player_id,
@@ -55,6 +76,11 @@ def profile_to_domain(model: ValorantProfileModel) -> ValorantProfile:
 
 
 def review_to_model(review: TeammateReview) -> TeammateReviewModel:
+    """Map a domain teammate review to its ORM representation.
+
+    :param review: Domain teammate review.
+    :returns: Detached SQLAlchemy review model.
+    """
     return TeammateReviewModel(
         id=review.id,
         reviewer_id=review.reviewer_id,
@@ -66,6 +92,12 @@ def review_to_model(review: TeammateReview) -> TeammateReviewModel:
 
 
 def review_to_domain(model: TeammateReviewModel) -> TeammateReview:
+    """Map an ORM teammate review to its domain representation.
+
+    :param model: SQLAlchemy review model.
+    :returns: Domain teammate review.
+    :raises InvalidReviewError: If persisted data violates domain invariants.
+    """
     return TeammateReview(
         id=model.id,
         reviewer_id=model.reviewer_id,

@@ -24,6 +24,11 @@ from .player import PlayerModel
 
 
 def enum_values(enum_class: type[StrEnum]) -> list[str]:
+    """Extract persisted values from a string enum.
+
+    :param enum_class: String-enum class used by an SQLAlchemy enum column.
+    :returns: Values stored in PostgreSQL.
+    """
     return [str(member.value) for member in enum_class]
 
 
@@ -48,6 +53,17 @@ player_status_enum = SAEnum(
 
 
 class ValorantProfileModel(Base):
+    """Persist the one Valorant profile owned by a player.
+
+    :ivar player_id: UUID of the owning player.
+    :ivar region: Matchmaking region.
+    :ivar current_rank: Current competitive rank.
+    :ivar main_roles: Non-empty collection of preferred Valorant roles.
+    :ivar status: Current availability status.
+    :ivar teammate_rating: Aggregate teammate rating between zero and five.
+    :ivar reviews_count: Number of reviews included in the aggregate rating.
+    """
+
     __tablename__ = "valorant_profiles"
     __table_args__ = (
         UniqueConstraint("player_id"),

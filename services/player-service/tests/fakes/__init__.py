@@ -3,9 +3,11 @@ from .repositories import (
     FakeProfileRepository,
     FakeReviewRepository,
 )
+from .transactions import FakeTransactionManager
 
 __all__ = [
     "FakePlayerRepository",
     "FakeProfileRepository",
     "FakeReviewRepository",
+    "FakeTransactionManager",
 ]

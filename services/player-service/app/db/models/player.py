@@ -13,6 +13,15 @@ if TYPE_CHECKING:
 
 
 class PlayerModel(Base):
+    """Persist a player account.
+
+    :ivar id: Stable player UUID.
+    :ivar nickname: Display name used by the player.
+    :ivar riot_id: Globally unique Riot identifier.
+    :ivar created_at: Creation timestamp.
+    :ivar updated_at: Last modification timestamp.
+    """
+
     __tablename__ = "players"
     __table_args__ = (
         UniqueConstraint("riot_id"),

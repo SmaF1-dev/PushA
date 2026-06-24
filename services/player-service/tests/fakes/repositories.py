@@ -52,6 +52,11 @@ class FakeProfileRepository(ProfileRepository):
         )
         return deepcopy(profile) if profile is not None else None
 
+    async def get_by_player_id_for_update(
+        self, player_id: UUID
+    ) -> ValorantProfile | None:
+        return await self.get_by_player_id(player_id)
+
     async def update(self, profile: ValorantProfile) -> ValorantProfile | None:
         if profile.id not in self._profiles:
             return None

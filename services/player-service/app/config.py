@@ -10,6 +10,8 @@ DEFAULT_ENV_FILE = SERVICE_ROOT / ".env"
 
 
 class AppEnvironment(StrEnum):
+    """Supported application runtime environments."""
+
     DEVELOPMENT = "development"  # For local development
     TEST = "test"  # To run tests
     PRODUCTION = "production"  # For deployed application
@@ -94,7 +96,10 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> PostgresDsn:
-        """Build the async SQLAlchemy URL from validated PostgreSQL settings."""
+        """Build the asynchronous SQLAlchemy URL.
+
+        :returns: Validated PostgreSQL DSN using the ``asyncpg`` driver.
+        """
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",
             username=self.postgres_user,
@@ -106,12 +111,20 @@ class Settings(BaseSettings):
 
 
 def load_settings() -> Settings:
-    """Load and validate settings without using the process-wide cache."""
+    """Load and validate settings without using the process-wide cache.
+
+    :returns: Newly constructed application settings.
+    :raises pydantic.ValidationError: If required variables are absent or invalid.
+    """
     # noinspection PyArgumentList
     return Settings()
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Return the process-wide immutable source of application settings."""
+    """Return the process-wide immutable settings instance.
+
+    :returns: Cached application settings.
+    :raises pydantic.ValidationError: If settings cannot be loaded on the first call.
+    """
     return load_settings()

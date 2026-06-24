@@ -8,6 +8,10 @@ from .exceptions import InvalidPlayerError, InvalidProfileError, InvalidReviewEr
 
 
 def utc_now() -> datetime:
+    """Return the current timezone-aware UTC timestamp.
+
+    :returns: Current datetime in UTC.
+    """
     return datetime.now(UTC)
 
 
@@ -20,6 +24,16 @@ def _clean_required(value: str, field_name: str, error_type: type[ValueError]) -
 
 @dataclass(slots=True)
 class Player:
+    """Represent a player account independently from persistence.
+
+    :param nickname: Non-empty player display name.
+    :param riot_id: Non-empty unique Riot identifier.
+    :param id: Stable player UUID.
+    :param created_at: Account creation time.
+    :param updated_at: Last account modification time.
+    :raises InvalidPlayerError: If required text is blank.
+    """
+
     nickname: str
     riot_id: str
     id: UUID = field(default_factory=uuid4)
@@ -31,12 +45,30 @@ class Player:
         self.riot_id = _clean_required(self.riot_id, "riot_id", InvalidPlayerError)
 
     def rename(self, nickname: str) -> None:
+        """Change the player's display name.
+
+        :param nickname: New non-empty nickname.
+        :returns: ``None``.
+        :raises InvalidPlayerError: If the nickname is blank.
+        """
         self.nickname = _clean_required(nickname, "nickname", InvalidPlayerError)
         self.updated_at = utc_now()
 
 
 @dataclass(slots=True)
 class ValorantProfile:
+    """Represent a player's Valorant-specific matchmaking data.
+
+    :param player_id: UUID of the profile owner.
+    :param region: Non-empty matchmaking region.
+    :param current_rank: Current Valorant rank.
+    :param main_roles: Non-empty set of preferred roles.
+    :param status: Current player availability.
+    :param teammate_rating: Aggregate rating between zero and five.
+    :param reviews_count: Number of reviews included in the rating.
+    :raises InvalidProfileError: If profile invariants are violated.
+    """
+
     player_id: UUID
     region: str
     current_rank: ValorantRank
@@ -77,6 +109,12 @@ class ValorantProfile:
         return normalized
 
     def change_status(self, status: PlayerStatus) -> None:
+        """Change player availability.
+
+        :param status: New valid player status.
+        :returns: ``None``.
+        :raises InvalidProfileError: If ``status`` is not a ``PlayerStatus``.
+        """
         if not isinstance(status, PlayerStatus):
             raise InvalidProfileError("status must be a PlayerStatus")
         self.status = status
@@ -89,6 +127,14 @@ class ValorantProfile:
         current_rank: ValorantRank | None = None,
         main_roles: Iterable[ValorantRole] | None = None,
     ) -> None:
+        """Update supplied Valorant profile fields.
+
+        :param region: Optional new matchmaking region.
+        :param current_rank: Optional new Valorant rank.
+        :param main_roles: Optional non-empty collection of roles.
+        :returns: ``None``.
+        :raises InvalidProfileError: If any supplied value is invalid.
+        """
         if region is not None:
             self.region = self._normalize_region(region)
         if current_rank is not None:
@@ -100,6 +146,12 @@ class ValorantProfile:
         self.updated_at = utc_now()
 
     def recalculate_rating(self, ratings: Iterable[int]) -> None:
+        """Recalculate aggregate rating from individual reviews.
+
+        :param ratings: Integer ratings from one to five.
+        :returns: ``None``.
+        :raises InvalidReviewError: If a rating is not an integer from one to five.
+        """
         values = list(ratings)
         if any(not isinstance(value, int) for value in values):
             raise InvalidReviewError("review ratings must be integers")
@@ -113,6 +165,15 @@ class ValorantProfile:
 
 @dataclass(slots=True)
 class TeammateReview:
+    """Represent one player's review of another player.
+
+    :param reviewer_id: UUID of the reviewing player.
+    :param target_player_id: UUID of the reviewed player.
+    :param rating: Integer rating from one to five.
+    :param comment: Optional comment; blank text is normalized to ``None``.
+    :raises InvalidReviewError: If the review is a self-review or rating is invalid.
+    """
+
     reviewer_id: UUID
     target_player_id: UUID
     rating: int

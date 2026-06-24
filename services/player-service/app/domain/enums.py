@@ -2,6 +2,8 @@ from enum import StrEnum
 
 
 class ValorantRole(StrEnum):
+    """Playable role categories supported by Valorant matchmaking."""
+
     DUELIST = "DUELIST"
     CONTROLLER = "CONTROLLER"
     INITIATOR = "INITIATOR"
@@ -9,6 +11,8 @@ class ValorantRole(StrEnum):
 
 
 class PlayerStatus(StrEnum):
+    """Player availability states used by profiles and matchmaking."""
+
     OFFLINE = "OFFLINE"
     ONLINE = "ONLINE"
     READY_TO_PLAY = "READY_TO_PLAY"
@@ -17,6 +21,8 @@ class PlayerStatus(StrEnum):
 
 
 class ValorantRank(StrEnum):
+    """Ordered Valorant competitive ranks from Iron 1 to Radiant."""
+
     IRON_1 = "IRON_1"
     IRON_2 = "IRON_2"
     IRON_3 = "IRON_3"
@@ -45,15 +51,19 @@ class ValorantRank(StrEnum):
 
     @property
     def order(self) -> int:
-        """Return the rank's position in the hierarchy."""
+        """Return the rank's position in the hierarchy.
+
+        :returns: Zero-based rank position.
+        """
         return tuple(type(self)).index(self)
 
     def is_between_or_equal(self, minimum: "ValorantRank", maximum: "ValorantRank") -> bool:
-        """
-        Check whether this rank belongs to given rank range
-        :param minimum: the lowest possible rank
-        :param maximum: the highest possible rank
-        :return: True if rank belongs to given range False otherwise
+        """Check whether the rank belongs to an inclusive range.
+
+        :param minimum: Lowest accepted rank.
+        :param maximum: Highest accepted rank.
+        :returns: ``True`` when the rank is inside the range.
+        :raises ValueError: If ``minimum`` is higher than ``maximum``.
         """
         if minimum.order > maximum.order:
             raise ValueError("minimum rank cannot be higher than maximum rank")

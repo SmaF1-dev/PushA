@@ -10,6 +10,15 @@ from .player import PlayerModel
 
 
 class TeammateReviewModel(Base):
+    """Persist a review written by one player about another.
+
+    :ivar reviewer_id: UUID of the player who wrote the review.
+    :ivar target_player_id: UUID of the reviewed player.
+    :ivar rating: Integer rating from one to five.
+    :ivar comment: Optional review text.
+    :ivar created_at: Review creation timestamp.
+    """
+
     __tablename__ = "teammate_reviews"
     __table_args__ = (
         CheckConstraint("rating >= 1 AND rating <= 5", name="rating_range"),
