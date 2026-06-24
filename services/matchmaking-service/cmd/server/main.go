@@ -7,6 +7,7 @@ import (
 	"pusha/matchmaking-service/internal/api/handlers"
 	"pusha/matchmaking-service/internal/config"
 	"pusha/matchmaking-service/internal/db"
+	"pusha/matchmaking-service/internal/provider"
 	"pusha/matchmaking-service/internal/repository"
 	"pusha/matchmaking-service/internal/service"
 )
@@ -22,8 +23,14 @@ func main() {
 
 	matchmakingRepository := repository.NewMatchmakingRepository(postgresPool)
 	candidateRepository := repository.NewCandidateRepository(postgresPool)
+	playerProvider := provider.NewMockPlayerProvider()
 	groupRepository := repository.NewGroupRepository(postgresPool)
-	matchmakingService := service.NewMatchmakingService(matchmakingRepository, candidateRepository, groupRepository)
+	matchmakingService := service.NewMatchmakingService(
+		matchmakingRepository,
+		candidateRepository,
+		groupRepository,
+		playerProvider,
+	)
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 
 	router := api.NewRouter(matchmakingHandler)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"pusha/matchmaking-service/internal/domain"
 	"pusha/matchmaking-service/internal/dto"
+	"pusha/matchmaking-service/internal/provider"
 	"pusha/matchmaking-service/internal/repository"
 	"time"
 
@@ -40,17 +41,20 @@ type MatchmakingService struct {
 	matchmakingRepository *repository.MatchmakingRepository
 	candidateRepository   *repository.CandidateRepository
 	groupRepository       *repository.GroupRepository
+	playerProvider        provider.PlayerProvider
 }
 
 func NewMatchmakingService(
 	matchmakingRepository *repository.MatchmakingRepository,
 	candidateRepository *repository.CandidateRepository,
 	groupRepository *repository.GroupRepository,
+	playerProvider provider.PlayerProvider,
 ) *MatchmakingService {
 	return &MatchmakingService{
 		matchmakingRepository: matchmakingRepository,
 		candidateRepository:   candidateRepository,
 		groupRepository:       groupRepository,
+		playerProvider:        playerProvider,
 	}
 }
 
@@ -113,61 +117,23 @@ func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID str
 		return nil, ErrRequestIsNotOpen
 	}
 
-	now := time.Now().UTC()
+	candidates, err := s.playerProvider.FindPlayers(ctx, provider.FindPlayersRequest{
+		ExcludedPlayerID:     matchmakingRequest.AuthorID,
+		MinRank:              matchmakingRequest.MinRank,
+		MaxRank:              matchmakingRequest.MaxRank,
+		RequiredPlayerStatus: matchmakingRequest.RequiredPlayerStatus,
+		MinTeammateRating:    matchmakingRequest.MinTeammateRating,
+		Region:               matchmakingRequest.Region,
+		RequiredRoles:        matchmakingRequest.RequiredRoles,
+		Limit:                matchmakingRequest.NeededPlayers * 3,
+	})
 
-	candidates := []domain.Candidate{
-		{
-			ID:             uuid.NewString(),
-			RequestID:      requestID,
-			PlayerID:       "player_2",
-			Nickname:       "SmokeMaster",
-			RiotID:         "SmokeMaster#EUW",
-			CurrentRank:    "GOLD_2",
-			Region:         matchmakingRequest.Region,
-			MainRoles:      []string{"CONTROLLER"},
-			Status:         "READY_TO_PLAY",
-			TeammateRating: 4.5,
-			CreatedAt:      now,
-		},
-		{
-			ID:             uuid.NewString(),
-			RequestID:      requestID,
-			PlayerID:       "player_3",
-			Nickname:       "SentinelGuy",
-			RiotID:         "SentinelGuy#EUW",
-			CurrentRank:    "PLATINUM_1",
-			Region:         matchmakingRequest.Region,
-			MainRoles:      []string{"SENTINEL"},
-			Status:         "READY_TO_PLAY",
-			TeammateRating: 4.2,
-			CreatedAt:      now,
-		},
-		{
-			ID:             uuid.NewString(),
-			RequestID:      requestID,
-			PlayerID:       "player_4",
-			Nickname:       "FlashBoy",
-			RiotID:         "FlashBoy#EUW",
-			CurrentRank:    "GOLD_3",
-			Region:         matchmakingRequest.Region,
-			MainRoles:      []string{"INITIATOR"},
-			Status:         "READY_TO_PLAY",
-			TeammateRating: 3.9,
-			CreatedAt:      now,
-		},
-		{
-			ID:             uuid.NewString(),
-			RequestID:      requestID,
-			PlayerID:       "player_5",
-			Nickname:       "DuelOnly",
-			RiotID:         "DuelOnly#EUW",
-			CurrentRank:    "SILVER_2",
-			Region:         matchmakingRequest.Region,
-			MainRoles:      []string{"DUELIST"},
-			Status:         "ONLINE",
-			TeammateRating: 4.8,
-			CreatedAt:      now,
-		},
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range candidates {
+		candidates[i].RequestID = requestID
 	}
 
 	candidateFilter := NewCandidateFilter()
