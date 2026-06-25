@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	_ "pusha/matchmaking-service/docs"
 	"pusha/matchmaking-service/internal/api"
 	"pusha/matchmaking-service/internal/api/handlers"
 	"pusha/matchmaking-service/internal/config"
@@ -12,6 +13,12 @@ import (
 	"pusha/matchmaking-service/internal/service"
 )
 
+// @title PushA Matchmaking Service API
+// @version 1.0
+// @description REST API for Valorant teammate matchmaking. The service creates matchmaking requests, retrieves candidates from the Python Player Service via gRPC, scores and filters them, and creates match groups.
+// @host localhost:8080
+// @BasePath /api/v1
+// @schemes http
 func main() {
 	cfg := config.Load()
 

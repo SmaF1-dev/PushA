@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"pusha/matchmaking-service/internal/api/handlers"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -11,6 +13,10 @@ func NewRouter(matchmakingHandler *handlers.MatchmakingHandler) http.Handler {
 	router := chi.NewRouter()
 
 	router.Get("/health", handlers.HealthHandler)
+
+	router.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Post("/matchmaking/requests", matchmakingHandler.CreateMatchmakingRequestHandler)

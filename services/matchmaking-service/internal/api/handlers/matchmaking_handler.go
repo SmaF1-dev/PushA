@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"pusha/matchmaking-service/internal/api/response"
 	"pusha/matchmaking-service/internal/domain"
@@ -32,6 +31,19 @@ func NewMatchmakingHandler(matchmakingService MatchmakingService) *MatchmakingHa
 	}
 }
 
+// CreateMatchmakingRequestHandler creates a new matchmaking request.
+//
+// @Summary Create matchmaking request
+// @Description Creates a new Valorant matchmaking request for a player.
+// @Tags Matchmaking Requests
+// @Accept json
+// @Produce json
+// @Param request body dto.CreateMatchmakingRequest true "Create matchmaking request"
+// @Success 201 {object} dto.MatchmakingRequestResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 409 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /matchmaking/requests [post]
 func (h *MatchmakingHandler) CreateMatchmakingRequestHandler(w http.ResponseWriter, r *http.Request) {
 	var request dto.CreateMatchmakingRequest
 
@@ -50,6 +62,17 @@ func (h *MatchmakingHandler) CreateMatchmakingRequestHandler(w http.ResponseWrit
 	response.WriteJSON(w, http.StatusCreated, toMatchmakingRequestResponse(matchmakingRequest))
 }
 
+// GetMatchmakingRequestHandler returns a matchmaking request by ID.
+//
+// @Summary Get matchmaking request
+// @Description Returns a matchmaking request by its identifier.
+// @Tags Matchmaking Requests
+// @Produce json
+// @Param request_id path string true "Matchmaking request ID"
+// @Success 200 {object} dto.MatchmakingRequestResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /matchmaking/requests/{request_id} [get]
 func (h *MatchmakingHandler) GetMatchmakingRequestHandler(w http.ResponseWriter, r *http.Request) {
 	requestID := chi.URLParam(r, "request_id")
 	if requestID == "" {
@@ -69,6 +92,16 @@ func (h *MatchmakingHandler) GetMatchmakingRequestHandler(w http.ResponseWriter,
 	response.WriteJSON(w, http.StatusOK, toMatchmakingRequestResponse(matchmakingRequest))
 }
 
+// GetPlayerMatchmakingRequestsHandler returns matchmaking requests created by a player.
+//
+// @Summary Get player matchmaking requests
+// @Description Returns all matchmaking requests created by the specified player.
+// @Tags Matchmaking Requests
+// @Produce json
+// @Param player_id path string true "Player ID"
+// @Success 200 {array} dto.MatchmakingRequestResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /players/{player_id}/matchmaking/requests [get]
 func (h *MatchmakingHandler) GetPlayerMatchmakingRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	playerID := chi.URLParam(r, "player_id")
 	if playerID == "" {
@@ -97,6 +130,18 @@ func (h *MatchmakingHandler) GetPlayerMatchmakingRequestsHandler(w http.Response
 	})
 }
 
+// SearchCandidatesHandler searches suitable candidates for a matchmaking request.
+//
+// @Summary Search candidates
+// @Description Retrieves players from the Python Player Service via gRPC, filters them, calculates scores and stores candidates.
+// @Tags Candidates
+// @Produce json
+// @Param request_id path string true "Matchmaking request ID"
+// @Success 200 {object} dto.SearchCandidatesResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 409 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /matchmaking/requests/{request_id}/search [post]
 func (h *MatchmakingHandler) SearchCandidatesHandler(w http.ResponseWriter, r *http.Request) {
 	requestID := chi.URLParam(r, "request_id")
 	if requestID == "" {
@@ -108,7 +153,6 @@ func (h *MatchmakingHandler) SearchCandidatesHandler(w http.ResponseWriter, r *h
 
 	candidates, err := h.matchmakingService.SearchCandidates(r.Context(), requestID)
 	if err != nil {
-		log.Printf("search candidates error: %v", err)
 		response.WriteAppError(w, err)
 		return
 	}
@@ -124,6 +168,17 @@ func (h *MatchmakingHandler) SearchCandidatesHandler(w http.ResponseWriter, r *h
 	})
 }
 
+// GetCandidatesHandler returns stored candidates for a matchmaking request.
+//
+// @Summary Get candidates
+// @Description Returns candidates previously found and stored for the specified matchmaking request.
+// @Tags Candidates
+// @Produce json
+// @Param request_id path string true "Matchmaking request ID"
+// @Success 200 {object} dto.SearchCandidatesResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /matchmaking/requests/{request_id}/candidates [get]
 func (h *MatchmakingHandler) GetCandidatesHandler(w http.ResponseWriter, r *http.Request) {
 	requestID := chi.URLParam(r, "request_id")
 	if requestID == "" {
@@ -152,6 +207,20 @@ func (h *MatchmakingHandler) GetCandidatesHandler(w http.ResponseWriter, r *http
 	})
 }
 
+// CreateMatchGroupHandler creates a match group from selected candidates.
+//
+// @Summary Create match group
+// @Description Creates a match group using the request author and selected candidate IDs.
+// @Tags Match Groups
+// @Accept json
+// @Produce json
+// @Param request_id path string true "Matchmaking request ID"
+// @Param request body dto.CreateMatchGroupRequest true "Selected candidate IDs"
+// @Success 201 {object} dto.MatchGroupResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 409 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /matchmaking/requests/{request_id}/group [post]
 func (h *MatchmakingHandler) CreateMatchGroupHandler(w http.ResponseWriter, r *http.Request) {
 	requestID := chi.URLParam(r, "request_id")
 	if requestID == "" {

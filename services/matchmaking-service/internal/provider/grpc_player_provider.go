@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"pusha/matchmaking-service/internal/domain"
 	playerpb "pusha/matchmaking-service/pkg/proto"
+	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// GrpcPlayerProvider is a PlayerProvider implementation that retrieves players
+// from the Python Player Service using gRPC.
 type GrpcPlayerProvider struct {
 	conn   *grpc.ClientConn
 	client playerpb.ValorantPlayerServiceClient
@@ -52,6 +55,7 @@ func (p *GrpcPlayerProvider) FindPlayers(ctx context.Context, request FindPlayer
 		return nil, fmt.Errorf("find valorant players via grpc: %w", err)
 	}
 
+	now := time.Now().UTC()
 	candidates := make([]domain.Candidate, 0, len(response.GetCandidates()))
 
 	for _, grpcCandidate := range response.GetCandidates() {
@@ -65,6 +69,7 @@ func (p *GrpcPlayerProvider) FindPlayers(ctx context.Context, request FindPlayer
 			MainRoles:      grpcCandidate.GetMainRoles(),
 			Status:         grpcCandidate.GetStatus(),
 			TeammateRating: grpcCandidate.GetTeammateRating(),
+			CreatedAt:      now,
 		})
 	}
 

@@ -2,6 +2,7 @@ package service
 
 import "pusha/matchmaking-service/internal/domain"
 
+// CandidateSpecification defines one eligibility rule for a matchmaking candidate.
 type CandidateSpecification interface {
 	IsSatisfiedBy(request domain.MatchmakingRequest, candidate domain.Candidate) bool
 }

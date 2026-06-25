@@ -5,6 +5,11 @@ import (
 	"pusha/matchmaking-service/internal/domain"
 )
 
+// ScoringStrategy defines how a candidate score is calculated.
+//
+// Different implementations use different weights for rank, rating, role match
+// and status, which allows changing matchmaking behavior without changing the
+// main search flow.
 type ScoringStrategy interface {
 	CalculateScore(request domain.MatchmakingRequest, candidate domain.Candidate) float64
 }
