@@ -23,7 +23,11 @@ func main() {
 
 	matchmakingRepository := repository.NewMatchmakingRepository(postgresPool)
 	candidateRepository := repository.NewCandidateRepository(postgresPool)
-	playerProvider := provider.NewMockPlayerProvider()
+	playerProvider, err := provider.NewGrpcPlayerProvider(cfg.PlayerServiceGRPCAddr)
+	if err != nil {
+		log.Fatal("failed to create player service grpc provider: ", err)
+	}
+	defer playerProvider.Close()
 	groupRepository := repository.NewGroupRepository(postgresPool)
 	matchmakingService := service.NewMatchmakingService(
 		matchmakingRepository,

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"pusha/matchmaking-service/internal/api/response"
 	"pusha/matchmaking-service/internal/domain"
@@ -107,6 +108,7 @@ func (h *MatchmakingHandler) SearchCandidatesHandler(w http.ResponseWriter, r *h
 
 	candidates, err := h.matchmakingService.SearchCandidates(r.Context(), requestID)
 	if err != nil {
+		log.Printf("search candidates error: %v", err)
 		response.WriteAppError(w, err)
 		return
 	}
