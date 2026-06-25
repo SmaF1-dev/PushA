@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// GroupRepository stores match groups and their members in PostgreSQL.
 type GroupRepository struct {
 	db *pgxpool.Pool
 }
@@ -17,6 +18,8 @@ func NewGroupRepository(db *pgxpool.Pool) *GroupRepository {
 	}
 }
 
+// Create saves a match group and all its members in a single transaction.
+// If any insert fails, the transaction is rolled back.
 func (r *GroupRepository) Create(ctx context.Context, group domain.MatchGroup) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {

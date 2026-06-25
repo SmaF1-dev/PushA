@@ -1,5 +1,7 @@
 package apperror
 
+// Type represents a high-level category of application error.
+// HTTP handlers use it to map business errors to proper HTTP status codes.
 type Type string
 
 const (
@@ -9,6 +11,10 @@ const (
 	TypeInternal   Type = "INTERNAL"
 )
 
+// AppError is a typed business error returned by service layer methods.
+//
+// It contains a stable error code for API clients and an optional field name for
+// validation errors.
 type AppError struct {
 	Type    Type
 	Code    string

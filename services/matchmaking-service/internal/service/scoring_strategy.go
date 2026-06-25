@@ -75,6 +75,8 @@ func (s RoleFocusedScoringStrategy) CalculateScore(request domain.MatchmakingReq
 	)
 }
 
+// NewScoringStrategy returns a scoring strategy by its name.
+// If the provided name is unknown, the balanced strategy is used by default.
 func NewScoringStrategy(strategy string) ScoringStrategy {
 	switch strategy {
 	case "RANK_FOCUSED":

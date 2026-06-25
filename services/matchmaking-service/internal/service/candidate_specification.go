@@ -55,10 +55,14 @@ func (s RoleSpecification) IsSatisfiedBy(request domain.MatchmakingRequest, cand
 	return false
 }
 
+// CandidateFilter applies all configured specifications and keeps only candidates
+// that satisfy every required matchmaking constraint.
 type CandidateFilter struct {
 	specifications []CandidateSpecification
 }
 
+// NewCandidateFilter creates a candidate filter with all default matchmaking
+// specifications: author exclusion, rank range, status, rating, region and role.
 func NewCandidateFilter() CandidateFilter {
 	return CandidateFilter{
 		specifications: []CandidateSpecification{

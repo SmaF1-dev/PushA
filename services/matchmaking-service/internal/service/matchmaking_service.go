@@ -114,6 +114,10 @@ var (
 	)
 )
 
+// MatchmakingService contains the main business logic of the Go matchmaking service.
+//
+// It creates matchmaking requests, retrieves candidates from PlayerProvider,
+// filters and scores them, stores candidates, and creates match groups.
 type MatchmakingService struct {
 	matchmakingRepository *repository.MatchmakingRepository
 	candidateRepository   *repository.CandidateRepository
@@ -184,6 +188,9 @@ func (s *MatchmakingService) GetRequestsByAuthorID(ctx context.Context, authorID
 	return s.matchmakingRepository.GetByAuthorID(ctx, authorID)
 }
 
+// SearchCandidates retrieves candidates from the configured PlayerProvider,
+// filters them using Specification Pattern, calculates score using Strategy
+// Pattern, stores candidates and moves the request to SEARCHING status.
 func (s *MatchmakingService) SearchCandidates(ctx context.Context, requestID string) ([]domain.Candidate, error) {
 	matchmakingRequest, err := s.matchmakingRepository.GetByID(ctx, requestID)
 	if err != nil {
@@ -244,6 +251,8 @@ func (s *MatchmakingService) GetCandidatesByRequestID(ctx context.Context, reque
 	return s.candidateRepository.GetByRequestID(ctx, requestID)
 }
 
+// CreateGroup creates a match group from selected candidates and the request author.
+// The request must already be in SEARCHING status.
 func (s *MatchmakingService) CreateGroup(ctx context.Context, requestID string, selectedCandidateIDs []string) (domain.MatchGroup, error) {
 	if len(selectedCandidateIDs) == 0 {
 		return domain.MatchGroup{}, ErrSelectedCandidatesRequired

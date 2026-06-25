@@ -5,6 +5,8 @@ import (
 	"pusha/matchmaking-service/internal/domain"
 )
 
+// FindPlayersRequest contains search constraints used by the matchmaking service
+// to request suitable Valorant players from an external player source.
 type FindPlayersRequest struct {
 	ExcludedPlayerID     string
 	MinRank              string
