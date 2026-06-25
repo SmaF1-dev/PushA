@@ -1,22 +1,31 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"pusha/matchmaking-service/internal/api/response"
 	"pusha/matchmaking-service/internal/domain"
 	"pusha/matchmaking-service/internal/dto"
-	"pusha/matchmaking-service/internal/service"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type MatchmakingHandler struct {
-	matchmakingService *service.MatchmakingService
+type MatchmakingService interface {
+	CreateRequest(ctx context.Context, request dto.CreateMatchmakingRequest) (domain.MatchmakingRequest, error)
+	GetRequestByID(ctx context.Context, requestID string) (domain.MatchmakingRequest, error)
+	GetRequestsByAuthorID(ctx context.Context, authorID string) ([]domain.MatchmakingRequest, error)
+	SearchCandidates(ctx context.Context, requestID string) ([]domain.Candidate, error)
+	GetCandidatesByRequestID(ctx context.Context, requestID string) ([]domain.Candidate, error)
+	CreateGroup(ctx context.Context, requestID string, selectedCandidateIDs []string) (domain.MatchGroup, error)
 }
 
-func NewMatchmakingHandler(matchmakingService *service.MatchmakingService) *MatchmakingHandler {
+type MatchmakingHandler struct {
+	matchmakingService MatchmakingService
+}
+
+func NewMatchmakingHandler(matchmakingService MatchmakingService) *MatchmakingHandler {
 	return &MatchmakingHandler{
 		matchmakingService: matchmakingService,
 	}
