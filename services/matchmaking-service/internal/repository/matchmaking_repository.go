@@ -185,3 +185,14 @@ func (r *MatchmakingRepository) HasActiveRequest(ctx context.Context, authorID s
 
 	return exists, nil
 }
+
+func (r *MatchmakingRepository) UpdateStatus(ctx context.Context, requestID string, status string) error {
+	query := `
+		UPDATE matchmaking_requests
+		SET status = $1
+		WHERE id = $2
+	`
+
+	_, err := r.db.Exec(ctx, query, status, requestID)
+	return err
+}

@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	HTTPPort              string `json:"http_port"`
-	PlayerServiceGRPCAddr string `json:"player_service_grppc_addr"`
+	PlayerServiceGRPCAddr string `json:"player_service_grpc_addr"`
 	DatabaseURL           string `json:"database_url"`
 }
 

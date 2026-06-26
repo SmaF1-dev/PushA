@@ -1,0 +1,323 @@
+basePath: /api/v1
+definitions:
+  dto.CandidateResponse:
+    properties:
+      current_rank:
+        type: string
+      main_roles:
+        items:
+          type: string
+        type: array
+      nickname:
+        type: string
+      player_id:
+        type: string
+      region:
+        type: string
+      riot_id:
+        type: string
+      score:
+        type: number
+      status:
+        type: string
+      teammate_rating:
+        type: number
+    type: object
+  dto.CreateMatchGroupRequest:
+    properties:
+      selected_candidate_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.CreateMatchmakingRequest:
+    properties:
+      author_id:
+        type: string
+      max_rank:
+        type: string
+      min_rank:
+        type: string
+      min_teammate_rating:
+        type: number
+      needed_players:
+        type: integer
+      region:
+        type: string
+      required_player_status:
+        type: string
+      required_roles:
+        items:
+          type: string
+        type: array
+      strategy:
+        type: string
+    type: object
+  dto.MatchGroupResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      members:
+        items:
+          type: string
+        type: array
+      request_id:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.MatchmakingRequestResponse:
+    properties:
+      author_id:
+        type: string
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      max_rank:
+        type: string
+      min_rank:
+        type: string
+      min_teammate_rating:
+        type: number
+      needed_players:
+        type: integer
+      region:
+        type: string
+      required_player_status:
+        type: string
+      required_roles:
+        items:
+          type: string
+        type: array
+      status:
+        type: string
+      strategy:
+        type: string
+    type: object
+  dto.SearchCandidatesResponse:
+    properties:
+      candidates:
+        items:
+          $ref: '#/definitions/dto.CandidateResponse'
+        type: array
+      request_id:
+        type: string
+    type: object
+  response.ErrorBody:
+    properties:
+      code:
+        type: string
+      details:
+        additionalProperties: {}
+        type: object
+      message:
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/response.ErrorBody'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API for Valorant teammate matchmaking. The service creates matchmaking
+    requests, retrieves candidates from the Python Player Service via gRPC, scores
+    and filters them, and creates match groups.
+  title: PushA Matchmaking Service API
+  version: "1.0"
+paths:
+  /matchmaking/requests:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new Valorant matchmaking request for a player.
+      parameters:
+      - description: Create matchmaking request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMatchmakingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.MatchmakingRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create matchmaking request
+      tags:
+      - Matchmaking Requests
+  /matchmaking/requests/{request_id}:
+    get:
+      description: Returns a matchmaking request by its identifier.
+      parameters:
+      - description: Matchmaking request ID
+        in: path
+        name: request_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MatchmakingRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get matchmaking request
+      tags:
+      - Matchmaking Requests
+  /matchmaking/requests/{request_id}/candidates:
+    get:
+      description: Returns candidates previously found and stored for the specified
+        matchmaking request.
+      parameters:
+      - description: Matchmaking request ID
+        in: path
+        name: request_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SearchCandidatesResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get candidates
+      tags:
+      - Candidates
+  /matchmaking/requests/{request_id}/group:
+    post:
+      consumes:
+      - application/json
+      description: Creates a match group using the request author and selected candidate
+        IDs.
+      parameters:
+      - description: Matchmaking request ID
+        in: path
+        name: request_id
+        required: true
+        type: string
+      - description: Selected candidate IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMatchGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.MatchGroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create match group
+      tags:
+      - Match Groups
+  /matchmaking/requests/{request_id}/search:
+    post:
+      description: Retrieves players from the Python Player Service via gRPC, filters
+        them, calculates scores and stores candidates.
+      parameters:
+      - description: Matchmaking request ID
+        in: path
+        name: request_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SearchCandidatesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Search candidates
+      tags:
+      - Candidates
+  /players/{player_id}/matchmaking/requests:
+    get:
+      description: Returns all matchmaking requests created by the specified player.
+      parameters:
+      - description: Player ID
+        in: path
+        name: player_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.MatchmakingRequestResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get player matchmaking requests
+      tags:
+      - Matchmaking Requests
+schemes:
+- http
+swagger: "2.0"

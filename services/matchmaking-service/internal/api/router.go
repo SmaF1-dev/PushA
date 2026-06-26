@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"pusha/matchmaking-service/internal/api/handlers"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -12,10 +14,17 @@ func NewRouter(matchmakingHandler *handlers.MatchmakingHandler) http.Handler {
 
 	router.Get("/health", handlers.HealthHandler)
 
+	router.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
+
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Post("/matchmaking/requests", matchmakingHandler.CreateMatchmakingRequestHandler)
 		r.Get("/matchmaking/requests/{request_id}", matchmakingHandler.GetMatchmakingRequestHandler)
 		r.Get("/players/{player_id}/matchmaking/requests", matchmakingHandler.GetPlayerMatchmakingRequestsHandler)
+		r.Post("/matchmaking/requests/{request_id}/search", matchmakingHandler.SearchCandidatesHandler)
+		r.Get("/matchmaking/requests/{request_id}/candidates", matchmakingHandler.GetCandidatesHandler)
+		r.Post("/matchmaking/requests/{request_id}/group", matchmakingHandler.CreateMatchGroupHandler)
 	})
 
 	return router
